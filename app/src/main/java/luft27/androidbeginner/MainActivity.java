@@ -20,6 +20,9 @@ import android.widget.EditText;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
@@ -41,12 +44,23 @@ public class MainActivity extends AppCompatActivity {
 		});
 
 		usbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
-		createBroadcastReceiver();
+		broadcastReceiver = createBroadcastReceiver();
+		permissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+		registerReceiver(broadcastReceiver, new IntentFilter(ACTION_USB_PERMISSION));
+		registerReceiver(broadcastReceiver, new IntentFilter(ACTION_USB_DEVICE_DETACHED));
+		registerReceiver(broadcastReceiver, new IntentFilter(ACTION_USB_DATA_RECEIVED));
+		connectDevice();
 	}
 
 	@Override
 	protected void onPause() {
 		super.onPause();
+		unregisterReceiver(broadcastReceiver);
 		setDevice(null);
 	}
 
@@ -60,8 +74,8 @@ public class MainActivity extends AppCompatActivity {
 		}
     }
 
-	private void createBroadcastReceiver() {
-		broadcastReceiver = new BroadcastReceiver() {
+	private BroadcastReceiver createBroadcastReceiver() {
+		return new BroadcastReceiver() {
 			@Override
 			public void onReceive(Context context, Intent intent) {
 				String action = intent.getAction();
@@ -73,17 +87,14 @@ public class MainActivity extends AppCompatActivity {
 				} else if (action.equals(ACTION_USB_DEVICE_DETACHED)) {
 					setDevice(null);
 				} else if (action.equals(ACTION_USB_DATA_RECEIVED)) {
-					consoleOutput.append(intent.getStringExtra("text"));
+					try {
+						consoleOutput.append(new String(intent.getByteArrayExtra("data"), "UTF-8"));
+					} catch (UnsupportedEncodingException e) {
+					}
 					((ScrollView) findViewById(R.id.scrollView)).fullScroll(View.FOCUS_DOWN);
 				}
 			}
 		};
-
-		permissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
-
-		registerReceiver(broadcastReceiver, new IntentFilter(ACTION_USB_PERMISSION));
-		registerReceiver(broadcastReceiver, new IntentFilter(ACTION_USB_DEVICE_DETACHED));
-		registerReceiver(broadcastReceiver, new IntentFilter(ACTION_USB_DATA_RECEIVED));
 	}
 
 	private void connectDevice() {
@@ -144,22 +155,11 @@ public class MainActivity extends AppCompatActivity {
 			public void run() {
 				running = true;
 				byte[] buffer = new byte[64];
-				StringBuilder line = new StringBuilder();
 
 				while (running && connection != null) {
 					int n = connection.bulkTransfer(endpointReceive, buffer, 64, 100);
-
-					for (int i = 0; i < n; ++i) {
-						line.append((char)buffer[i]);
-						if (buffer[i] == '\n') {
-							notifyUi(line.toString());
-							line = new StringBuilder();
-						}
-					}
-
-					if (n <= 0 && line.length() > 0) {
-						notifyUi(line.toString());
-						line = new StringBuilder();
+					if (n > 0) {
+						notifyUi(Arrays.copyOfRange(buffer, 0, n));
 					}
 				}
 			}
@@ -168,9 +168,9 @@ public class MainActivity extends AppCompatActivity {
 		thread.start();
 	}
 
-	private void notifyUi(String text) {
+	private void notifyUi(byte[] data) {
 		Intent intent = new Intent(ACTION_USB_DATA_RECEIVED);
-		intent.putExtra("text", text);
+		intent.putExtra("data", data);
 		sendBroadcast(intent);
 	}
 
