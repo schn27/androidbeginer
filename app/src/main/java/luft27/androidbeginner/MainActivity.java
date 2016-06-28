@@ -52,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
 	protected void onResume() {
 		super.onResume();
 		registerReceiver(broadcastReceiver, new IntentFilter(ACTION_USB_PERMISSION));
+		registerReceiver(broadcastReceiver, new IntentFilter(ACTION_USB_DEVICE_ATTACHED));
 		registerReceiver(broadcastReceiver, new IntentFilter(ACTION_USB_DEVICE_DETACHED));
 		registerReceiver(broadcastReceiver, new IntentFilter(ACTION_USB_DATA_RECEIVED));
 		connectDevice();
@@ -62,6 +63,18 @@ public class MainActivity extends AppCompatActivity {
 		super.onPause();
 		unregisterReceiver(broadcastReceiver);
 		setDevice(null);
+	}
+
+	@Override
+	protected void onSaveInstanceState(Bundle state) {
+		super.onSaveInstanceState(state);
+		state.putCharSequence("consoleOutputText", consoleOutput.getText());
+	}
+
+	@Override
+	protected void onRestoreInstanceState(Bundle state) {
+		super.onRestoreInstanceState(state);
+		consoleOutput.setText(state.getCharSequence("consoleOutputText", ""));
 	}
 
     private void onButtonSend(View view) {
@@ -84,6 +97,9 @@ public class MainActivity extends AppCompatActivity {
 					if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
 						setDevice(device);
 					}
+				} else if (action.equals(ACTION_USB_DEVICE_ATTACHED)) {
+					UsbDevice device = (UsbDevice) intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+					usbManager.requestPermission(device, permissionIntent);
 				} else if (action.equals(ACTION_USB_DEVICE_DETACHED)) {
 					setDevice(null);
 				} else if (action.equals(ACTION_USB_DATA_RECEIVED)) {
@@ -133,8 +149,7 @@ public class MainActivity extends AppCompatActivity {
 		this.device = device;
 
 		if (device != null) {
-			status.setText(String.format("VID=%04x PID=%04x\n",
-					device.getVendorId(), device.getProductId()));
+			status.setText(device.getDeviceName());
 
 			iface = device.getInterface(1);
 			connection = usbManager.openDevice(device);
@@ -157,7 +172,7 @@ public class MainActivity extends AppCompatActivity {
 				byte[] buffer = new byte[64];
 
 				while (running && connection != null) {
-					int n = connection.bulkTransfer(endpointReceive, buffer, 64, 100);
+					int n = connection.bulkTransfer(endpointReceive, buffer, buffer.length, 100);
 					if (n > 0) {
 						notifyUi(Arrays.copyOfRange(buffer, 0, n));
 					}
