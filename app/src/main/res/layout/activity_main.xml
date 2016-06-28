@@ -17,9 +17,11 @@
         android:layout_height="wrap_content">
 
         <TextView
+            style="@style/CodeFont"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/status" />
+            android:id="@+id/status"
+            />
     </LinearLayout>
 
     <LinearLayout
@@ -29,10 +31,11 @@
         android:weightSum="1">
 
         <EditText
+            style="@style/CodeFont"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
             android:id="@+id/consoleInput"
-            android:layout_weight="1" />
+            android:layout_weight="1"
+            />
 
         <Button
             android:layout_width="66dp"
@@ -49,8 +52,7 @@
         android:fillViewport="true" >
 
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            style="@style/CodeFont"
             android:id="@+id/consoleOutput" />
     </ScrollView>
 
