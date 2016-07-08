@@ -17,9 +17,6 @@ import java.util.Map;
 
 import luft27.androidbeginner.R;
 
-/**
- * Created by amalikov on 07.07.2016.
- */
 public class Manager {
 	public Manager(Activity activity, List<Info> filter) {
 		this.activity = activity;
