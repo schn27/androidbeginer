@@ -15,15 +15,6 @@ public class Port {
 		this.device = device;
 	}
 
-	public void open() {
-		iface = device.getInterface(1);
-		connection = usbManager.openDevice(device);
-		boolean res = connection.claimInterface(iface, true);
-
-		endpointSend = iface.getEndpoint(0);
-		endpointReceive = iface.getEndpoint(1);
-	}
-
 	public void close() {
 		if (connection != null) {
 			connection.releaseInterface(iface);
@@ -37,11 +28,26 @@ public class Port {
 	}
 
 	public int read(byte[] buffer, int length, int timeout) {
-		return connection.bulkTransfer(endpointReceive, buffer, buffer.length, timeout);
+		return open() ? connection.bulkTransfer(endpointReceive, buffer, buffer.length, timeout) : -1;
 	}
 
 	public int write(byte[] buffer, int length, int timeout) {
-		return connection.bulkTransfer(endpointSend, buffer, length, timeout);
+		return open() ? connection.bulkTransfer(endpointSend, buffer, length, timeout) : -1;
+	}
+
+	private boolean open() {
+		if (connection == null) {
+			iface = device.getInterface(1);
+			connection = usbManager.openDevice(device);
+
+			if (connection != null) {
+				connection.claimInterface(iface, true);
+				endpointSend = iface.getEndpoint(0);
+				endpointReceive = iface.getEndpoint(1);
+			}
+		}
+
+		return connection != null;
 	}
 
 	private final UsbManager usbManager;
