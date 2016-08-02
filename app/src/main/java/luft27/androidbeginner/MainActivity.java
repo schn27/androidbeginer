@@ -108,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
 				String action = intent.getAction();
 				if (action.equals(ACTION_USB_NEW_DATA)) {
 					try {
-						consoleInput.append(new String(intent.getByteArrayExtra("data"), "UTF-8"));
+						consoleOutput.append(new String(intent.getByteArrayExtra("data"), "UTF-8"));
 					} catch (UnsupportedEncodingException e) {
 					}
 				}
