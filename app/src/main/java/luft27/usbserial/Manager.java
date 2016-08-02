@@ -56,7 +56,7 @@ public class Manager {
 		}
 
 		for (Info info : filter) {
-			if (d.getVendorId() == info.vid && d.getProductId() == info.pid) {
+			if (d.getVendorId() == info.vendorId && d.getProductId() == info.productId) {
 				return true;
 			}
 		}
@@ -123,13 +123,11 @@ public class Manager {
 		};
 	}
 
-
 	private final Activity activity;
 	private final List<Info> filter;
 	private final UsbManager usbManager;
 	private BroadcastReceiver broadcastReceiver;
 	private PendingIntent permissionIntent;
-
 
 	private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
 	private static final String ACTION_USB_DEVICE_ATTACHED = "android.hardware.usb.action.USB_DEVICE_ATTACHED";

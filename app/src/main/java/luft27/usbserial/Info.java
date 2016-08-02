@@ -1,11 +1,11 @@
 package luft27.usbserial;
 
 public final class Info {
-	public Info(int vid, int pid) {
-		this.vid = vid;
-		this.pid = pid;
+	public Info(int vendorId, int productId) {
+		this.vendorId = vendorId;
+		this.productId = productId;
 	}
 
-	public final int vid;
-	public final int pid;
+	public final int vendorId;
+	public final int productId;
 }
