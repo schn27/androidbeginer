@@ -1,4 +1,4 @@
-package luft27.androidbeginner;
+package luft27.usbterminal;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;

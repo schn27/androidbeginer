@@ -1,4 +1,4 @@
-package luft27.androidbeginner;
+package luft27.usbterminal;
 
 import org.junit.Test;
 
