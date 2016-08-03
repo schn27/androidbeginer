@@ -11,24 +11,25 @@
     android:orientation="vertical"
     android:weightSum="1">
 
-    <LinearLayout
-        android:orientation="horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+    <ScrollView
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:id="@+id/scrollView"
+        android:fillViewport="false"
+        android:layout_weight="1">
 
         <TextView
             style="@style/CodeFont"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:id="@+id/status"
-            />
-    </LinearLayout>
+            android:id="@+id/consoleOutput"
+            android:focusable="false"/>
+    </ScrollView>
 
     <LinearLayout
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:weightSum="1">
+        android:weightSum="1"
+        android:layout_weight="1">
 
         <EditText
             style="@style/CodeFont"
@@ -44,16 +45,5 @@
             android:id="@+id/buttonSend"
             android:singleLine="true" />
     </LinearLayout>
-
-    <ScrollView
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:id="@+id/scrollView"
-        android:fillViewport="true" >
-
-        <TextView
-            style="@style/CodeFont"
-            android:id="@+id/consoleOutput" />
-    </ScrollView>
 
 </LinearLayout>

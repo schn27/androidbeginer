@@ -93,7 +93,7 @@ public class Manager {
 
 		if (usbDevice != null) {
 			port = new Port(usbManager, usbDevice);
-			connectStateHandler.onConnected(usbDevice.getDeviceName());
+			connectStateHandler.onConnected(String.format("VID=%04x PID=%04x", usbDevice.getVendorId(), usbDevice.getProductId()));
 		}
 	}
 

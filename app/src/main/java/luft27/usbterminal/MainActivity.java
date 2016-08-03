@@ -25,9 +25,10 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-		status = (TextView) findViewById(R.id.status);
 		consoleInput = (EditText) findViewById(R.id.consoleInput);
 		consoleOutput = (TextView) findViewById(R.id.consoleOutput);
+
+		terminalEmulator = new TerminalEmulator(consoleOutput);
 
 		((Button) findViewById(R.id.buttonSend)).setOnClickListener(new View.OnClickListener() {
 			@Override
@@ -49,14 +50,14 @@ public class MainActivity extends AppCompatActivity {
 		manager = new luft27.usbserial.Manager(this, filter, new ConnectStateHandler() {
 			@Override
 			public void onConnected(String deviceName) {
-				status.setText(deviceName);
+				setTitle(getText(R.string.app_name) + " (" + deviceName + ")");
 				startReadThread();
 			}
 
 			@Override
 			public void onDisconnected() {
 				stopReadThread();
-				status.setText("");
+				setTitle(R.string.app_name);
 			}
 		});
 	}
@@ -77,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
 	@Override
 	protected void onRestoreInstanceState(Bundle state) {
 		super.onRestoreInstanceState(state);
-		consoleOutput.setText(state.getCharSequence("consoleOutputText", ""));
+		terminalEmulator.put(state.getCharSequence("consoleOutputText", "").toString());
 	}
 
     private void onButtonSend(View view) {
@@ -85,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
 
 		if (port != null) {
 			String cmd = consoleInput.getText().toString() + "\n";
-			consoleOutput.append(cmd);
+			consoleInput.setText("");
 			port.write(cmd.getBytes(), cmd.length(), 0);
 		}
     }
@@ -97,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
 				String action = intent.getAction();
 				if (action.equals(ACTION_USB_NEW_DATA)) {
 					try {
-						consoleOutput.append(new String(intent.getByteArrayExtra("data"), "UTF-8"));
+						terminalEmulator.put(new String(intent.getByteArrayExtra("data"), "UTF-8"));
 					} catch (UnsupportedEncodingException e) {
 					}
 				}
@@ -149,9 +150,9 @@ public class MainActivity extends AppCompatActivity {
 		}
 	}
 
-    private TextView status;
 	private EditText consoleInput;
 	private TextView consoleOutput;
+	private TerminalEmulator terminalEmulator;
 
 	private static final String TAG = "MainActivity";
 
