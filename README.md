@@ -1,2 +1,3 @@
-# androidbeginer
-my first attempt to write an android app
+# USB terminal
+Simple USB (CDC/ACM) terminal.
+
