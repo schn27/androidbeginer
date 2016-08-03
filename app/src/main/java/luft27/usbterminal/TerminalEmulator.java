@@ -68,7 +68,19 @@ public class TerminalEmulator {
 
 		sb.append(currentLine.toString());
 
-		ui.setText(sb.toString());
+		output(sb.toString());
+	}
+
+	private void output(String text) {
+		ui.setText(text);
+
+		final int scrollAmount = ui.getLayout().getLineTop(ui.getLineCount()) - ui.getHeight();
+
+		if (scrollAmount > 0) {
+			ui.scrollTo(0, scrollAmount);
+		} else {
+			ui.scrollTo(0, 0);
+		}
 	}
 
 	private final TextView ui;

@@ -11,18 +11,14 @@
     android:orientation="vertical"
     android:weightSum="1">
 
-    <ScrollView
-        android:layout_width="fill_parent"
+    <TextView
+        style="@style/CodeFont"
+        android:id="@+id/consoleOutput"
+        android:focusable="false"
         android:layout_height="fill_parent"
-        android:id="@+id/scrollView"
-        android:fillViewport="false"
-        android:layout_weight="1">
-
-        <TextView
-            style="@style/CodeFont"
-            android:id="@+id/consoleOutput"
-            android:focusable="false"/>
-    </ScrollView>
+        android:layout_weight="1"
+        android:scrollIndicators="right"
+        android:scrollbars="vertical"/>
 
     <LinearLayout
         android:orientation="horizontal"

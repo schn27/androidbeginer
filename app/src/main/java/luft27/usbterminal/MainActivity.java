@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.method.ScrollingMovementMethod;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -27,6 +28,7 @@ public class MainActivity extends AppCompatActivity {
 
 		consoleInput = (EditText) findViewById(R.id.consoleInput);
 		consoleOutput = (TextView) findViewById(R.id.consoleOutput);
+		consoleOutput.setMovementMethod(new ScrollingMovementMethod());
 
 		terminalEmulator = new TerminalEmulator(consoleOutput);
 
