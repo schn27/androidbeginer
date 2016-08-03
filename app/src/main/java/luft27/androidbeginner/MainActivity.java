@@ -22,8 +22,12 @@ import android.widget.TextView;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+
+import luft27.usbserial.ConnectStateHandler;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -43,26 +47,36 @@ public class MainActivity extends AppCompatActivity {
 			}
 		});
 
-		usbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
 		broadcastReceiver = createBroadcastReceiver();
-		permissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
 	}
 
 	@Override
 	protected void onResume() {
 		super.onResume();
-		registerReceiver(broadcastReceiver, new IntentFilter(ACTION_USB_PERMISSION));
-		registerReceiver(broadcastReceiver, new IntentFilter(ACTION_USB_DEVICE_ATTACHED));
-		registerReceiver(broadcastReceiver, new IntentFilter(ACTION_USB_DEVICE_DETACHED));
-		registerReceiver(broadcastReceiver, new IntentFilter(ACTION_USB_DATA_RECEIVED));
-		connectDevice();
+		registerReceiver(broadcastReceiver, new IntentFilter(ACTION_USB_NEW_DATA));
+
+		List<luft27.usbserial.Info> filter = new ArrayList<>();
+		filter.add(new luft27.usbserial.Info(pixhawkVendorId, pixhawkProductId));
+		manager = new luft27.usbserial.Manager(this, filter, new ConnectStateHandler() {
+			@Override
+			public void onConnected(String deviceName) {
+				status.setText(deviceName);
+				startReadThread();
+			}
+
+			@Override
+			public void onDisconnected() {
+				stopReadThread();
+				status.setText("");
+			}
+		});
 	}
 
 	@Override
 	protected void onPause() {
 		super.onPause();
+		manager.close();
 		unregisterReceiver(broadcastReceiver);
-		setDevice(null);
 	}
 
 	@Override
@@ -78,12 +92,12 @@ public class MainActivity extends AppCompatActivity {
 	}
 
     private void onButtonSend(View view) {
-		connectDevice();
+		luft27.usbserial.Port port = manager.getPort();
 
-		if (connection != null) {
+		if (port != null) {
 			String cmd = consoleInput.getText().toString() + "\n";
 			consoleOutput.append(cmd);
-			connection.bulkTransfer(endpointSend, cmd.getBytes(), cmd.length(), 0);
+			port.write(cmd.getBytes(), cmd.length(), 0);
 		}
     }
 
@@ -92,77 +106,16 @@ public class MainActivity extends AppCompatActivity {
 			@Override
 			public void onReceive(Context context, Intent intent) {
 				String action = intent.getAction();
-				if (action.equals(ACTION_USB_PERMISSION)) {
-					UsbDevice device = (UsbDevice) intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-					if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-						setDevice(device);
-					}
-				} else if (action.equals(ACTION_USB_DEVICE_ATTACHED)) {
-					UsbDevice device = (UsbDevice) intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-					usbManager.requestPermission(device, permissionIntent);
-				} else if (action.equals(ACTION_USB_DEVICE_DETACHED)) {
-					setDevice(null);
-				} else if (action.equals(ACTION_USB_DATA_RECEIVED)) {
+				if (action.equals(ACTION_USB_NEW_DATA)) {
 					try {
 						consoleOutput.append(new String(intent.getByteArrayExtra("data"), "UTF-8"));
 					} catch (UnsupportedEncodingException e) {
 					}
-					((ScrollView) findViewById(R.id.scrollView)).fullScroll(View.FOCUS_DOWN);
 				}
 			}
 		};
 	}
 
-	private void connectDevice() {
-		if (connection != null) {
-			return;
-		}
-
-		int vendorId = 9900;
-		int productId = 17;
-
-		Map<String, UsbDevice> deviceList = usbManager.getDeviceList();
-		if (deviceList != null && !deviceList.isEmpty()) {
-			for (UsbDevice d : deviceList.values()) {
-				if (d.getVendorId() == vendorId && d.getProductId() == productId) {
-					usbManager.requestPermission(d, permissionIntent);
-				}
-			}
-		}
-	}
-
-	private void setDevice(UsbDevice device) {
-		if (this.device != null) {
-			stopReadThread();
-
-			if (connection != null) {
-				connection.releaseInterface(iface);
-				connection.close();
-				connection = null;
-			}
-
-			endpointSend = null;
-			endpointReceive = null;
-			iface = null;
-		}
-
-		this.device = device;
-
-		if (device != null) {
-			status.setText(device.getDeviceName());
-
-			iface = device.getInterface(1);
-			connection = usbManager.openDevice(device);
-			boolean res = connection.claimInterface(iface, true);
-
-			endpointSend = iface.getEndpoint(0);
-			endpointReceive = iface.getEndpoint(1);
-
-			startReadThread();
-		} else {
-			status.setText("");
-		}
-	}
 
 	private void startReadThread() {
 		thread = new Thread(new Runnable() {
@@ -171,10 +124,16 @@ public class MainActivity extends AppCompatActivity {
 				running = true;
 				byte[] buffer = new byte[64];
 
-				while (running && connection != null) {
-					int n = connection.bulkTransfer(endpointReceive, buffer, buffer.length, 100);
-					if (n > 0) {
-						notifyUi(Arrays.copyOfRange(buffer, 0, n));
+				while (running) {
+					luft27.usbserial.Port port = manager.getPort();
+
+					if (port != null) {
+						int n = port.read(buffer, buffer.length, 100);
+						if (n > 0) {
+							notifyUi(Arrays.copyOfRange(buffer, 0, n));
+						}
+					} else {
+						break;
 					}
 				}
 			}
@@ -184,7 +143,7 @@ public class MainActivity extends AppCompatActivity {
 	}
 
 	private void notifyUi(byte[] data) {
-		Intent intent = new Intent(ACTION_USB_DATA_RECEIVED);
+		Intent intent = new Intent(ACTION_USB_NEW_DATA);
 		intent.putExtra("data", data);
 		sendBroadcast(intent);
 	}
@@ -206,22 +165,17 @@ public class MainActivity extends AppCompatActivity {
 	private TextView consoleOutput;
 
 	private static final String TAG = "MainActivity";
-	private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
-	private static final String ACTION_USB_DEVICE_ATTACHED = "android.hardware.usb.action.USB_DEVICE_ATTACHED";
-	private static final String ACTION_USB_DEVICE_DETACHED = "android.hardware.usb.action.USB_DEVICE_DETACHED";
-	private static final String ACTION_USB_DATA_RECEIVED = "luf27.androidbeginner.action.USB_DATA_RECEIVED";
 
-	private UsbManager usbManager;
-	private UsbDevice device;
-	private UsbInterface iface;
-	private UsbEndpoint endpointSend;
-	private UsbEndpoint endpointReceive;
-	private volatile UsbDeviceConnection connection;
-	private BroadcastReceiver broadcastReceiver;
-	private PendingIntent permissionIntent;
+	private luft27.usbserial.Manager manager;
 
 	private Thread thread;
 	private volatile boolean running;
+
+	private BroadcastReceiver broadcastReceiver;
+
+	private static final String ACTION_USB_NEW_DATA = "luft27.androidbeginner.USB_NEW_DATA";
+	private static final int pixhawkVendorId = 9900;
+	private static final int pixhawkProductId = 17;
 }
 
 
