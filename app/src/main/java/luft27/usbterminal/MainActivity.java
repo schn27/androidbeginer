@@ -90,6 +90,8 @@ public class MainActivity extends AppCompatActivity {
 			String cmd = consoleInput.getText().toString() + "\n";
 			consoleInput.setText("");
 			port.write(cmd.getBytes(), cmd.length(), 0);
+		} else {
+			terminalEmulator.put("1\n2\n3\n4\n5\n6\n7\n8\n9\na\nb\nc\nd\ne\nf\ng\nh\ni\nj\n");
 		}
     }
 
