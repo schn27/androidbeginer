@@ -7,8 +7,8 @@ import android.content.IntentFilter;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
-import android.view.View;
-import android.widget.Button;
+import android.view.KeyEvent;
+import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -26,16 +26,19 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-		consoleInput = (EditText) findViewById(R.id.consoleInput);
-		consoleOutput = (TextView) findViewById(R.id.consoleOutput);
-		consoleOutput.setMovementMethod(new ScrollingMovementMethod());
+		input = (EditText) findViewById(R.id.consoleInput);
+		output = (TextView) findViewById(R.id.consoleOutput);
+		output.setMovementMethod(new ScrollingMovementMethod());
 
-		terminalEmulator = new TerminalEmulator(consoleOutput);
+		terminalEmulator = new TerminalEmulator(output);
 
-		((Button) findViewById(R.id.buttonSend)).setOnClickListener(new View.OnClickListener() {
+		input.setOnEditorActionListener(new EditText.OnEditorActionListener() {
 			@Override
-			public void onClick(View v) {
-				onButtonSend(v);
+			public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+				if (actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_NULL) {
+					onInputDone();
+				}
+				return false;
 			}
 		});
 
@@ -74,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
 	@Override
 	protected void onSaveInstanceState(Bundle state) {
 		super.onSaveInstanceState(state);
-		state.putCharSequence("consoleOutputText", consoleOutput.getText());
+		state.putCharSequence("consoleOutputText", output.getText());
 	}
 
 	@Override
@@ -83,12 +86,12 @@ public class MainActivity extends AppCompatActivity {
 		terminalEmulator.put(state.getCharSequence("consoleOutputText", "").toString());
 	}
 
-    private void onButtonSend(View view) {
+    private void onInputDone() {
 		luft27.usbserial.Port port = manager.getPort();
 
 		if (port != null) {
-			String cmd = consoleInput.getText().toString() + "\n";
-			consoleInput.setText("");
+			String cmd = input.getText().toString() + "\n";
+			input.setText("");
 			port.write(cmd.getBytes(), cmd.length(), 0);
 		} else {
 			terminalEmulator.put("1\n2\n3\n4\n5\n6\n7\n8\n9\na\nb\nc\nd\ne\nf\ng\nh\ni\nj\n");
@@ -109,7 +112,6 @@ public class MainActivity extends AppCompatActivity {
 			}
 		};
 	}
-
 
 	private void startReadThread() {
 		thread = new Thread(new Runnable() {
@@ -154,8 +156,8 @@ public class MainActivity extends AppCompatActivity {
 		}
 	}
 
-	private EditText consoleInput;
-	private TextView consoleOutput;
+	private EditText input;
+	private TextView output;
 	private TerminalEmulator terminalEmulator;
 
 	private static final String TAG = "MainActivity";

@@ -74,12 +74,14 @@ public class TerminalEmulator {
 	private void output(String text) {
 		ui.setText(text);
 
-		final int scrollAmount = ui.getLayout().getLineTop(ui.getLineCount()) - ui.getHeight();
+		if (ui.getLayout() != null) {
+			final int scrollAmount = ui.getLayout().getLineTop(ui.getLineCount()) - ui.getHeight();
 
-		if (scrollAmount > 0) {
-			ui.scrollTo(0, scrollAmount);
-		} else {
-			ui.scrollTo(0, 0);
+			if (scrollAmount > 0) {
+				ui.scrollTo(0, scrollAmount);
+			} else {
+				ui.scrollTo(0, 0);
+			}
 		}
 	}
 
